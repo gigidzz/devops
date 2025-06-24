@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# compiled output (if using TypeScript)
+dist/
+
+# local env files
+.env
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.DS_Store
