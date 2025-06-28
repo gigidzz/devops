@@ -20,15 +20,11 @@ Setup Instructions
 
 Docker & Docker Compose
 
-(Optional) Ansible & WSL2
 
 2. Running the App
 # Build and run all services in detached mode
 make build
 make up
-
-# OR in development mode
-make dev
 
 3. Access Services
 
@@ -66,20 +62,6 @@ CPU and memory usage
 
 Backend health checks
 
-🔐 Security
-
-4. Trivy Scans (Image Scanning)
-
-Run the following to scan all images:
-
-trivy image devops-backend
-trivy image devops-frontend
-
-✅ What to include:
-
-Screenshot of critical vulnerabilities (if any)
-
-Steps taken to fix (e.g., updated dependency, switched base image)
 
 📫 Author
 
