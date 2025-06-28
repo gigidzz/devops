@@ -1,0 +1,119 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devops-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    env_file:
+      - ./backend/.env
+    networks:
+      - devops-network
+    volumes:
+      - backend-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.devops.service=backend"
+      - "com.devops.description=Backend API service"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devops-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+    networks:
+      - devops-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - frontend-logs:/var/log/nginx
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.devops.service=frontend"
+      - "com.devops.description=Frontend React application"
+
+  # Prometheus for monitoring (Task 3 prep)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: devops-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - devops-network
+    depends_on:
+      - backend
+    labels:
+      - "com.devops.service=monitoring"
+      - "com.devops.description=Prometheus monitoring"
+
+  # Grafana for visualization (Task 3 prep)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: devops-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - devops-network
+    depends_on:
+      - prometheus
+    labels:
+      - "com.devops.service=monitoring"
+      - "com.devops.description=Grafana visualization"
+
+networks:
+  devops-network:
+    driver: bridge
+    name: devops-network
+
+volumes:
+  backend-logs:
+    name: devops-backend-logs
+  frontend-logs:
+    name: devops-frontend-logs
+  prometheus-data:
+    name: devops-prometheus-data
+  grafana-data:
+    name: devops-grafana-data
+
