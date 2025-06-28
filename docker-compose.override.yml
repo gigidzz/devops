@@ -2,10 +2,14 @@ services:
   backend:
     environment:
       - NODE_ENV=development
+      - DEBUG=app:*
     volumes:
       - ./backend:/app
       - /app/node_modules
     command: npm start
+    # Enable hot reload and development features
+    stdin_open: true
+    tty: true
 
   frontend:
     build:
@@ -14,10 +18,27 @@ services:
       target: builder  # Use the builder stage which has Node.js
     environment:
       - REACT_APP_API_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true  # Enable hot reload in Docker
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
       - /app/node_modules
     command: npm start
     ports:
-      - "3000:3000"  # Override port mapping for dev server
+      - "3030:3000"  # Frontend development server
+    # Enable hot reload
+    stdin_open: true
+    tty: true
+
+  # Fix port conflict: Move Grafana to different port in development
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
